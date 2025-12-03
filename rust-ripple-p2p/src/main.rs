@@ -208,19 +208,23 @@ async fn save_results(id: &str, time: u64) {
         _ => format!("traces/{}/{}", id, time),
     };
     fs::create_dir_all(&path).unwrap();
-    [
+    let files = [
         "execution.txt",
-        "subscription_0.json",
-        "subscription_1.json",
-        "subscription_2.json",
-        "subscription_3.json",
-        "subscription_4.json",
-        "subscription_5.json",
-        "subscription_6.json",
+        "subscription_0.csv",
+        "subscription_1.csv",
+        "subscription_2.csv",
+        "subscription_3.csv",
+        "subscription_4.csv",
+        "subscription_5.csv",
+        "subscription_6.csv",
         "results.txt",
-    ]
-    .into_iter()
-    .for_each(|file| move_file(&path, file));
+    ];
+    for file in files {
+        if let Err(e) = move_file(&path, file) {
+            // don't fail the whole save on missing files; log and continue
+            warn!("could not copy {}: {}", file, e);
+        }
+    }
 
     let docker = Docker::connect_with_local_defaults().unwrap();
     let containers = docker
@@ -251,8 +255,8 @@ async fn save_results(id: &str, time: u64) {
 }
 
 #[inline]
-fn move_file(path: &String, filename: &str) {
-    fs::copy(filename, format!("{}/{}", &path, filename)).unwrap();
+fn move_file(path: &String, filename: &str) -> std::io::Result<u64> {
+    fs::copy(filename, format!("{}/{}", &path, filename))
 }
 
 #[test]

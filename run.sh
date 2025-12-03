@@ -59,6 +59,6 @@ do
     # docker rm -f byzzfuzz || true
     # # give copier a moment to detect container gone and exit
     # wait $COPIER_PID 2>/dev/null || true
-	# export RUST_BACKTRACE=1 
-    cargo run -p rust-ripple-p2p -- --toxiproxy-path ./toxiproxy-server
+	# export RUST_BACKTRACE=1
+    cargo run -q -p rust-ripple-p2p -- --toxiproxy-path ./toxiproxy-server
 done

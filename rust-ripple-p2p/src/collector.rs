@@ -3,6 +3,7 @@ use serialize::RippleMessage;
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::client::{PeerSubscriptionObject, SubscriptionObject};
 
@@ -28,12 +29,13 @@ impl Collector {
             File::create(Path::new("execution.txt")).expect("Opening execution file failed");
         let mut subscription_files = vec![];
         for peer in 0..number_of_nodes {
+            // create CSV subscription files and write header
+            let filename = format!("subscription_{}.csv", peer);
             let mut subscription_file = BufWriter::new(
-                File::create(Path::new(format!("subscription_{}.json", peer).as_str()))
-                    .expect("Opening subscription file failed"),
+                File::create(Path::new(&filename)).expect("Opening subscription file failed"),
             );
             subscription_file
-                .write_all(String::from("[\n").as_bytes())
+                .write_all(b"time_stamp,message\n")
                 .unwrap();
             subscription_files.push(subscription_file);
         }
@@ -64,8 +66,16 @@ impl Collector {
         let mut subscription_files = self.subscription_files;
         tokio::spawn(async move {
             let mut write_to_subscription_file = |peer: u16, text: String| {
+                // timestamp at receipt time
+                let ts = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs();
+                // compact JSON string is provided in text; escape double quotes for CSV
+                let escaped = text.replace('"', "\"\"");
+                let line = format!("{},\"{}\"\n", ts, escaped);
                 subscription_files[peer as usize]
-                    .write_all((text + ",\n").as_bytes())
+                    .write_all(line.as_bytes())
                     .unwrap();
             };
             loop {
