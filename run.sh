@@ -18,11 +18,12 @@ else
 fi
 
 # 构建，并将输出隐藏只在报错的时候打印
-cargo build -p rust-ripple-p2p >/dev/null 2>&1 || {
-	echo "Build failed, see output below:" >&2
-	cargo build -p rust-ripple-p2p
-	exit 1
-}
+cargo build -p rust-ripple-p2p >/dev/null 2>&1 
+
+# Create a single run-level timestamp folder name (e.g., 2025_11_22_17h35m) and export it
+RUN_TS=$(date +"%Y_%m_%d_%Hh%Mm")
+export RUN_TS
+
 for ((i=0; i<$n; i++))
 do
     # # ensure no leftover
@@ -58,6 +59,6 @@ do
     # docker rm -f byzzfuzz || true
     # # give copier a moment to detect container gone and exit
     # wait $COPIER_PID 2>/dev/null || true
-	export RUST_BACKTRACE=1 
-	cargo run -p rust-ripple-p2p -- --toxiproxy-path ./toxiproxy-server
+	# export RUST_BACKTRACE=1 
+    cargo run -p rust-ripple-p2p -- --toxiproxy-path ./toxiproxy-server
 done

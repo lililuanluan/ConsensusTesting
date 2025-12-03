@@ -200,7 +200,13 @@ fn main() {
 }
 
 async fn save_results(id: &str, time: u64) {
-    let path = format!("traces/{}/{}", id, time);
+    // Optional run-level timestamp prefix provided by run.sh, e.g., 2025_11_22_17h35m
+    // If present, we store results under traces/<RUN_TS>/<id>/<time>; otherwise traces/<id>/<time>
+    let run_ts = env::var("RUN_TS").ok();
+    let path = match run_ts {
+        Some(ts) if !ts.is_empty() => format!("traces/{}/{}/{}", ts, id, time),
+        _ => format!("traces/{}/{}", id, time),
+    };
     fs::create_dir_all(&path).unwrap();
     [
         "execution.txt",
