@@ -30,3 +30,9 @@ rust-ripple-p2p/traces/*
 
 .cargo
 traces
+
+cmake-3.25.1
+rippled
+cmake-3.25.1.tar.gz
+boost_1_75_0
+boost_1_75_0.tar.gz
