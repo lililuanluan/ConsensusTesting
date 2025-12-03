@@ -24,3 +24,17 @@ fi
 
 docker build -t ripple -f rippled.Dockerfile .
 DOCKER_BUILDKIT=1 docker build -t byzzfuzz .
+
+
+docker rm -f tmp
+# 1) 先从镜像创建一个临时容器
+docker create --name tmp byzzfuzz
+# 2) 从临时容器里拷贝 toxiproxy-server 到当前目录
+docker cp tmp:/home/toxiproxy-server ./toxiproxy-server       
+# 3) 删除临时容器
+docker rm -f tmp
+
+chmod +x ./toxiproxy-server
+
+cargo build -p rust-ripple-p2p
+# cargo run -p rust-ripple-p2p -- --toxiproxy-path ./toxiproxy-server

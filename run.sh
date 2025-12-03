@@ -17,10 +17,47 @@ else
     exit 1
 fi
 
+# 构建，并将输出隐藏只在报错的时候打印
+cargo build -p rust-ripple-p2p >/dev/null 2>&1 || {
+	echo "Build failed, see output below:" >&2
+	cargo build -p rust-ripple-p2p
+	exit 1
+}
 for ((i=0; i<$n; i++))
 do
-    docker rm byzzfuzz || true && \
-    $TIMEOUT_CMD 25m docker run -v /var/run/docker.sock:/var/run/docker.sock -i --init --net host --name byzzfuzz byzzfuzz && \
-    docker cp byzzfuzz:/home/traces . && \
-    docker rm byzzfuzz
+    # # ensure no leftover
+    # docker rm byzzfuzz || true
+
+    # # start container detached so we can periodically copy traces while it's running
+    # docker run -v /var/run/docker.sock:/var/run/docker.sock -d --init --net host --name byzzfuzz byzzfuzz
+
+    # # prepare local folder for this run
+    # run_dir="traces/run_${i}"
+    # mkdir -p "$run_dir"
+
+    # # background copier: while container exists, copy /home/traces out every 5s
+    # (
+    #     while docker ps -q -f name=byzzfuzz >/dev/null 2>&1; do
+    #         ts=$(date +%s)
+    #         # copy into a timestamped subfolder to keep intermediate snapshots
+    #         docker cp byzzfuzz:/home/traces "$run_dir/traces_${ts}" >/dev/null 2>&1 || true
+    #         sleep 5
+    #     done
+    # ) &
+
+    # COPIER_PID=$!
+
+    # # wait for container to finish, with timeout
+    # # docker wait blocks until container stops; wrap with timeout command
+    # $TIMEOUT_CMD 25m docker wait byzzfuzz || true
+
+    # # final copy (ensure we have the last traces)
+    # docker cp byzzfuzz:/home/traces "$run_dir/traces_final" >/dev/null 2>&1 || true
+
+    # # cleanup: stop/remove container and wait for copier to exit
+    # docker rm -f byzzfuzz || true
+    # # give copier a moment to detect container gone and exit
+    # wait $COPIER_PID 2>/dev/null || true
+	export RUST_BACKTRACE=1 
+	cargo run -p rust-ripple-p2p -- --toxiproxy-path ./toxiproxy-server
 done
